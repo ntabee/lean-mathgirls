@@ -2,11 +2,15 @@
 
 import tactic.norm_num
 import ..common
+import ..factorize
 
 set_option profiler true
 set_option trace.check true
 
 open tactic
+
+local attribute [simp, reducible] nat.factors
+local attribute [simp, reducible] ite
 
 example: 1024 = 2^10 := rfl
 #eval divisors 1024
@@ -89,3 +93,35 @@ rw [l, r] at h,
 have: 12 ≠ 7, from dec_trivial,
 contradiction,
 end
+
+-- Theorem:
+--  let n = factorize n = p1^b1 * p2^b2 * ... pm^bm, as above,
+--  sumdiv n = (sum_pow p1 b1) * ... * (sum_pow pm bm) = Π(sum_pow pi bi) (i=1..m)
+def prod_sum_pow (n: ℕ) := (list.map (λ (p: ℕ × ℕ), sum_pow p.1 p.2) (factorize n)).prod
+
+#eval prod_sum_pow 1
+#eval prod_sum_pow 6
+
+theorem sumdiv_eqn: ∀ n, sumdiv n = prod_sum_pow n := begin
+intro,
+rw [sumdiv, divisors, divisors_factorized],
+rw [prod_sum_pow, factorize],
+destruct (nat.factors n), {
+  intro h,
+  rw h, reflexivity,
+}, {
+  intros hd tl h,
+  have: hd ∈ (nat.factors n), by rw h; 
+}
+-- case list.cons {
+--   have: hd ∈ (nat.factors n), 
+--   let F := nat.factors n,
+--   change (nat.factors n) with F,
+--   have: hd ∈ F, by assumption,
+--   have hp: nat.prime hd, by apply nat.mem_factors this, 
+-- }
+
+end
+
+#eval factorize 1
+#eval (let fs : list (ℕ × ℕ) := factorize n in sumdiv n = prod_sum_pow n) list.nil
