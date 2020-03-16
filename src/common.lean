@@ -1,4 +1,5 @@
-import tactic.omega
+import data.list.basic data.list.perm
+import tactic.omega tactic.basic
 
 notation `ℙ` := nat.primes
 
@@ -11,28 +12,16 @@ match expr.is_eq e with
 | none := tactic.failed
 end
 
-namespace tree_sort
 
-inductive tree (α: Type*) --[has_lt α] [h : decidable_rel ((<) : α → α → Prop)]
-| l {} : tree
-| n : tree -> α -> tree -> tree
+@[simp]
+def list.cartesian {α: Type*}: list (list α) -> list (list α)
+| [] := []
+| [l] := list.map (λ x, [x]) l
+| (l::ls) := (list.map (λ ll: list α, (list.map (λ a:α, a::ll) l) ) (list.cartesian ls)).join
 
-@[simp, reducible]
-def tree.ins {α: Type*} (lt : α → α → bool) (x: α): tree α -> tree α
-| tree.l := tree.n tree.l x tree.l
-| (tree.n t y s) := cond (lt y x) (tree.n t y (tree.ins s)) (tree.n (tree.ins t) y s)
-
-@[simp, reducible]
-def tree.flat {α: Type*}: tree α -> list α
-| tree.l := []
-| (tree.n t x s) := (tree.flat t) ++ (x::(tree.flat s))
-
-@[simp, reducible]
-def sort {α: Type*}  (lt : α → α → bool) (l: list α) :=
-  tree.flat (list.foldl (λ t x, tree.ins lt x t) tree.l l)
-
-end tree_sort
-example: (tree_sort.sort (λ x y, to_bool (x < y)) (list.range 100)).length = 100 := by omega_nat ff
+@[simp]
+def flatMap {α β: Type*}: (α -> β) -> list (list α) -> list (list β) := λ f ll,
+  list.map (λ l, list.map f l) ll
 
 -- 1-based
 def fib: nat -> nat

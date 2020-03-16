@@ -1,6 +1,6 @@
 import data.list data.list.sort data.bool
 import tactic.norm_num tactic.omega
-import .common
+import .common .tree_sort
 
 local attribute [simp, reducible] nat.factors
 
@@ -42,9 +42,9 @@ def divisors_factorized (n: ℕ) :=
 
 #eval divisors_factorized (2*2*3*5*5)
 example: divisors_factorized (2*2*3*5*5) = [
-  [], [5], [3], [2], [5, 5], [3, 5], [2, 5], [2, 3], 
-  [2, 2], [3, 5, 5], [2, 5, 5], [2, 3, 5], [2, 2, 5], [2, 2, 3], [2, 3, 5, 5], 
-  [2, 2, 5, 5], [2, 2, 3, 5], [2, 2, 3, 5, 5]
+  [], [2], [3], [5], [2, 2], [2, 3], 
+  [2, 5], [3, 5], [5, 5], [2, 2, 3], [2, 2, 5], [2, 3, 5], 
+  [2, 5, 5], [3, 5, 5], [2, 2, 3, 5], [2, 2, 5, 5], [2, 3, 5, 5], [2, 2, 3, 5, 5]
 ] := begin
 norm_num,
 reflexivity,
