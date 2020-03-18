@@ -37,6 +37,7 @@ calc abs(-x) = abs(-(-3)): by rw [h]
 ... = 3: rfl
 end
 
+section sec_2_7
 -- Problem 2.7:
 -- Let n: ℕ ≥ 1, show how to derive "the sum of n's divisors".
 @[simp, reducible]
@@ -128,21 +129,22 @@ end
 @[simp, reducible]
 def prod_sum_pow (n: ℕ) := (list.map sum_pow (factorize n)).prod
 
-lemma sum_diprod_cons {p: ℕ × ℕ} {l: list (ℕ × ℕ)}: 
-  list.sum (<|p|> <*> (divisors_aux l)) = (sum_pow p) * (divisors_aux l).sum := by rw tensor_sum
-
 theorem sumdiv_eqn: ∀ n, sumdiv n = prod_sum_pow n := begin
 intro,
 rw [sumdiv, divisors],
 rw [prod_sum_pow],
 induction (factorize n), reflexivity, {
   rw divisors_aux,
-  rw sum_diprod_cons,
+  rw tensor_sum,
   rw ih,
   rw list.map_cons,
   rw list.prod_cons,
 }
 end
 
+end sec_2_7
+
+section sec_2_8
 -- Section 2.8: elaborates Thm 2.7
--- TBD.
+
+end sec_2_8

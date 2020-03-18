@@ -46,6 +46,6 @@ end
 
 -- geom (n, e) = [n^0, n^1, ..., n^e]
 @[simp, reducible]
-def geom (p: ℕ × ℕ) := list.map (λ c, (p.1 ^ c)) (list.range (p.2+1))
+def geom (p: α × ℕ) := list.map (λ c, (p.1 ^ c)) (list.range (p.2+1))
 notation `<|` p `|>` := geom p
 
