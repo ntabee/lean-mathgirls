@@ -12,17 +12,6 @@ match expr.is_eq e with
 | none := tactic.failed
 end
 
-
-@[simp]
-def list.cartesian {α: Type*}: list (list α) -> list (list α)
-| [] := []
-| [l] := list.map (λ x, [x]) l
-| (l::ls) := (list.map (λ ll: list α, (list.map (λ a:α, a::ll) l) ) (list.cartesian ls)).join
-
-@[simp]
-def flatMap {α β: Type*}: (α -> β) -> list (list α) -> list (list β) := λ f ll,
-  list.map (λ l, list.map f l) ll
-
 -- 1-based
 def fib: nat -> nat
 | 0 := 0 -- sentinel

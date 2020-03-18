@@ -236,7 +236,7 @@ case tree.n: tl y tr ih_l ih_r {
 }
 end
 
-protected theorem sort_equiv {α} {lt : α → α → bool} [decidable_eq α] (l: list α): l ~ (sort lt l) := begin
+protected theorem sort_equiv {α} [decidable_eq α] (lt : α → α → bool) (l: list α): l ~ (sort lt l) := begin
 induction l, reflexivity,
 case list.cons: h t ih {
   simp, simp at ih,

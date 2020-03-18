@@ -1,5 +1,5 @@
-import data.list data.list.sort data.bool
-import tactic.norm_num tactic.omega
+import data.list
+import tactic.norm_num
 import .common .tree_sort
 
 local attribute [simp, reducible] nat.factors
@@ -7,58 +7,76 @@ local attribute [simp, reducible] nat.factors
 set_option profiler true
 
 @[simp, reducible]
-def list.uniq {α: Type*} [decidable_eq α]: list α -> list α
-| [] := []
-| [a] := [a]
-| (a::b::t) := cond (a = b) (list.uniq (b::t)) (a::(list.uniq (b::t)))
+def list.zip_with_count {α: Type*} [decidable_eq α] (l: list α): list (α × ℕ) :=
+  list.map (λ x, (x, list.count x l)) l
 
--- factorize n = the list of pairs [(p1, e1), ..., (pm, em)], where Π pi^ei = n
 @[simp, reducible]
 def factorize (n: ℕ) : list (ℕ × ℕ) := 
-  let l := tree_sort.sort (λ a b, to_bool (a < b)) (nat.factors n) in
-  let (c: list ℕ) := list.map (λ x, list.count x l) l in
-  let l' := tree_sort.sort (λ a b, to_bool (a < b)) (list.zip l c) in
-  l'.uniq
+  list.erase_dup (nat.factors n).zip_with_count
 
 #eval factorize (2*2*3*5*5)
+example: (factorize (2*2*3)) ~ [(2, 2), (3, 1)] := by norm_num; reflexivity
 
-example: factorize (2*2*3*5*5) = [(2, 2), (3, 1), (5, 2)] := begin
-norm_num,
-reflexivity,
+@[simp, reducible]
+def Prod: list ℕ -> ℕ := list.prod
+theorem prod_singleton_id {x}: Prod [x] = x := by simp
+theorem prod_singleton_of_lift_id {x}: (Prod ∘ (λ x, [x])) x = x := by simp
+
+-- scalar * vector
+@[simp, reducible]
+def scalar (x: ℕ) (l: list ℕ) := list.map (λ y, y*x) l
+infixr * := scalar
+-- "vectors' direct product": [a1, a2, ... am] <*> [b1, b2, .., bn] = [a1*b1, a1*b2, ..., a1*bn, ..., am*bm]
+@[simp, reducible]
+def diprod: list ℕ -> list ℕ -> list ℕ
+| [] ys := []
+| (x::xs) ys := (x * ys) ++ (diprod xs ys)
+-- ist.map Prod (l1 ⊗ [l2])
+infixr <*> := diprod
+#eval [1, 2] <*> [1, 3, 9]
+
+lemma scalar_sum_commutes {x: ℕ} {l: list ℕ}: (x * l).sum = x * l.sum := begin
+induction l, reflexivity,
+case list.cons: hd tl ih {
+  rw list.sum_cons,
+  simp,
+  simp at ih,
+  rw ih,
+  rw left_distrib,
+  rw mul_comm,
+}
 end
 
+lemma diprod_sum_commutes {l1 l2: list ℕ}: (l1 <*> l2).sum = l1.sum * l2.sum := begin
+induction l1, {
+  rw diprod, simp,
+},
+case list.cons: hd tl ih {
+  rw list.sum_cons,
+  rw right_distrib,
+  rw diprod,
+  rw list.sum_append,
+  rw scalar_sum_commutes,
+  rw ih,
+}
+end
+
+-- pow_seq (n, e) = [n^0, n^1, ..., n^e]
 @[simp, reducible]
-def list.subl {α: Type*} [has_lt α] [decidable_eq α] [decidable_rel ((<) : α → α → Prop)]: list α -> list (list α)
-| [] := [[]]
-| (h::t) := 
-  let sort := tree_sort.sort (λ (x y: list α), x.length < y.length) in
-  let ss := sort ((list.subl t) ++ (list.subl t).map(list.cons h)) in
-  (tree_sort.sort (λ (x y: list α), to_bool ((x.length, x) < (y.length, y))) ss).uniq
-
-#eval (nat.factors (2*2*3*5*5)).subl
-@[simp, reducible]
-def divisors_factorized (n: ℕ) :=
-  (tree_sort.sort (λ s t, (list.length s) < (list.length t)) (nat.factors n).subl)
-
-#eval divisors_factorized (2*2*3*5*5)
-example: divisors_factorized (2*2*3*5*5) = [
-  [], [2], [3], [5], [2, 2], [2, 3], 
-  [2, 5], [3, 5], [5, 5], [2, 2, 3], [2, 2, 5], [2, 3, 5], 
-  [2, 5, 5], [3, 5, 5], [2, 2, 3, 5], [2, 2, 5, 5], [2, 3, 5, 5], [2, 2, 3, 5, 5]
-] := begin
-norm_num,
-reflexivity,
-end 
-
-#eval divisors_factorized (2*2*3*5*5)
+def pow_seq (p: ℕ × ℕ) := list.map (λ c, (p.1 ^ c)) (list.range (p.2+1))
+local notation `<|` p `|>` := pow_seq p
 
 @[simp, reducible]
-def divisors (n: ℕ) := 
-  tree_sort.sort (λ x y, to_bool (x < y)) ((divisors_factorized n).map list.prod)
+def divisors_aux: list (ℕ × ℕ) -> list ℕ
+| [] := [1]
+| (p::ps) := (<| p |>) <*> (divisors_aux ps)
+
+#eval divisors_aux (factorize (2*2*3*5*5))
+
+@[simp, reducible]
+def divisors (n: ℕ) := divisors_aux (factorize n)
 
 #eval divisors (2*2*3*5*5)
-example: divisors (2*2*3*5*5) = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 25, 30, 50, 60, 75, 100, 150, 300] := begin
-norm_num,
-reflexivity,
-end
+#eval divisors (2*2*3)
+example: tree_sort.sort (λ a b, to_bool (a < b)) (divisors (2*2*3)) = [1, 2, 3, 4, 6, 12] := by norm_num; reflexivity
 
