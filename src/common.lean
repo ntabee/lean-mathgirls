@@ -3,8 +3,6 @@ import tactic.omega tactic.basic
 
 notation `ℙ` := nat.primes
 
-set_option profiler true
-
 meta def by_eval (typ: Type*) [reflected typ]: tactic unit := do
 e <- tactic.target,
 match expr.is_eq e with

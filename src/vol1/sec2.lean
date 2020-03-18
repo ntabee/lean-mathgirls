@@ -2,11 +2,7 @@
 
 import tactic.norm_num tactic.tauto tactic
 import init.data.list.lemmas
-import ..common
-import ..factorize
-
-set_option profiler true
-set_option trace.check true
+import ..common ..list ..factorize
 
 open tactic
 
@@ -52,8 +48,7 @@ open pnat
 open decidable
 
 -- sum_pow (n, e) = Σ n^k (k = 0...e)
---   For notational bravity, recall pow_seq p=(n, e) = [n^0, n^1, n^e],  abbr. <| p |>
-local notation `<|` p `|>` := pow_seq p
+--   For notational bravity, recall geom p=(n, e) = [n^0, n^1, n^e],  abbr. <| p |>
 @[simp, reducible]
 def sum_pow (p: ℕ × ℕ) := <| p |>.sum
 
@@ -134,7 +129,7 @@ end
 def prod_sum_pow (n: ℕ) := (list.map sum_pow (factorize n)).prod
 
 lemma sum_diprod_cons {p: ℕ × ℕ} {l: list (ℕ × ℕ)}: 
-  list.sum (<|p|> <*> (divisors_aux l)) = (sum_pow p) * (divisors_aux l).sum := by rw diprod_sum_commutes
+  list.sum (<|p|> <*> (divisors_aux l)) = (sum_pow p) * (divisors_aux l).sum := by rw tensor_sum
 
 theorem sumdiv_eqn: ∀ n, sumdiv n = prod_sum_pow n := begin
 intro,

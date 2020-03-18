@@ -1,8 +1,6 @@
 import data.list.basic data.list.perm
 import tactic tactic.basic tactic.omega
 
-set_option profiler true
-
 namespace tree_sort
 
 inductive tree (α: Type*) --[has_lt α] [h : decidable_rel ((<) : α → α → Prop)]
