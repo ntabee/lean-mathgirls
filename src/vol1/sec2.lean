@@ -55,7 +55,7 @@ def sum_pow (p: ℕ × ℕ) := <| p |>.sum
 
 #eval sum_pow (2, 10) -- = 2047
 
--- Wrong equation:
+-- A wrong equation:
 --  let n = factorize n = p1^b1 * p2^b2 * ... pm^bm, where
 --    pi: ℙ, bi ≥ 1,
 --  sumdiv n = (sum_pow p1 b1) + ... + (sum_pow pm bm) = Σ(sum_pow pi bi) (i=1..m) :: wrong!
@@ -295,7 +295,7 @@ case list.cons: hd tl ih {
 end
 
 -- Theorem 2.8:
---  divsum n = Π (1-p^(m+1)/(1-p)), (p, m) ∈ factorize n
+--  sumdiv n = Π (1-p^(m+1)/(1-p)), (p, m) ∈ factorize n
 theorem sumdiv_eqn': ∀ n, sumdiv n = (list.map (λ p:ℕ × ℕ, gs_nat p) (factorize n)).prod := begin
 intro,
 unfold sumdiv, unfold divisors,
@@ -319,3 +319,98 @@ induction (factorize n), reflexivity,
 end
 end sec_2_8
 
+section sec_2_9
+-- Section 2.9 "At the School Library"
+--  2.9.1: Equations and Identities,
+
+-- "x - 1 = 0" is an equation,
+example: ∃ x: ℤ, x - 1 = 0 := ⟨1, rfl⟩ -- x = 1 ↔ x - 1 = 0
+
+-- while "2(x-1) = 2x - 2" is an identity.
+example: ∀ x: ℤ, 2*(x-1) = 2*x - 2 := begin 
+intros, apply mul_add,
+end
+
+-- A rewrite chain of identities
+lemma sub_left_comm (a b c: ℤ): a - b - c = a - c - b := begin
+rw sub_eq_add_neg a b, 
+rw sub_eq_add_neg _ c,
+norm_num,
+end
+
+theorem square_completion_one (x: ℤ): (x+1)*(x-1) = x^2 - 1 := calc 
+  (x+1)*(x-1) = 
+  (x+1)*x - (x+1)*1: by rw mul_sub
+  ... = x*x + 1*x -(x+1)*1: by rw add_mul
+  ... = x*x + 1*x - x*1 - 1*1: by rw [add_mul, sub_add_eq_sub_sub_swap, sub_left_comm]
+  ... = x^2 + x - x - 1: by rw [<-pow_two, mul_one, one_mul, one_mul]
+  ... = x^2 - 1: by rw [sub_eq_add_neg _ x, add_assoc (x^2), add_neg_self x, add_zero]
+.
+-- This is an identity: holds for all x:
+#check square_completion_one
+
+-- Square-complete x^2 - 5*x + 6
+theorem square_completion_2_and_3 (x: ℤ): x^2 - 5*x + 6 = (x-2)*(x-3) := by ring.
+-- if it's an equation (of RHS = 0), the solutions are 2&3
+example (x: ℤ): x^2 - 5*x + 6 = 0 -> x=2 ∨ x=3 := begin
+rw square_completion_2_and_3 x,
+intro h,
+simp  at h,
+omega,
+end
+
+-- 2.9.2: Product Forms and Sum Forms
+--  elementary quadratic equations over a general (commutative) ring R
+variables {R: Type}
+variable [comm_ring R] 
+variables {x α β: R}
+
+-- A complete-form equation of R:
+#check (x-α)*(x-β) = 0
+-- Expand this one-step into: x^2 - α*x - β*x +α*β
+theorem expand1: (x-α)*(x-β) = x^2 - α*x - β*x +α*β := begin
+norm_num,
+repeat { rw mul_add <|> rw add_mul },
+rw pow_two,
+tidy,
+rw mul_comm x β,
+apply add_comm,
+end
+-- ... then, group the degree-1 terms:
+theorem group1: x^2 - α*x - β*x +α*β = x^2 - (α+β)*x +α*β := begin
+ring,
+end
+-- Confirm these two forms are equivalent:
+theorem square_completion_id: (x-α)*(x-β) = 0 ↔ x^2 - (α+β)*x +α*β = 0 := begin
+apply iff.intro, {
+  intro h,
+  rw pow_two,
+  ring at h,
+  rw sub_eq_neg_add at h,
+  repeat {rw add_mul at h},
+  rw add_mul,
+  rw sub_eq_neg_add,
+  rw neg_eq_neg_one_mul,
+  rw mul_add,
+  repeat {rw <-mul_assoc},
+  repeat {rw <-neg_eq_neg_one_mul},
+  rw mul_comm α β,
+  rw add_comm (-α*x) _,
+  rw add_comm (x*x) at h, 
+  assumption,
+}, {
+  intro h,
+  rw pow_two at h,
+  repeat {rw sub_mul <|> rw mul_sub},
+  rw sub_eq_add_neg, rw neg_eq_neg_one_mul,
+  rw mul_sub,
+  repeat {rw <-neg_eq_neg_one_mul},
+  rw neg_sub_neg,
+  rw add_mul at h,
+  rw sub_add_eq_sub_sub_swap at h,
+  rw mul_comm β x at h,
+  tidy,
+}
+end
+
+end sec_2_9

@@ -83,34 +83,6 @@ induction l,
   simp, assumption,
 end
 
--- @[simp]
--- theorem tensor_cons {x: α} {l1 l2: list α}: (x::l1) <*> l2 = (x [*] l2) ++ (l1 <*> l2) := begin
--- induction l2, simp,
--- case list.cons: hd tl ih {
---   rw scalar_l_cons,
---   rw tensor, rw list.foldl_cons, rw scalar_l_cons, rw list.nil_append,
---   have hf: (λ (zs : list α) (x : α), zs ++ x[*](hd :: tl)) = (λ (zs : list α) (x : α), zs ++ ((x*hd) :: (x[*]tl))), {
---     funext, rw scalar_l_cons,
---   }, rw hf,
-
---   rw tensor,
---   rw hf,
-  
--- }
--- end
-
--- @[simp]
--- theorem tensor_foldl_distrib {l: list α} {ls: list (list α)}: 
---   list.foldl (<*>) l ls = l <*> (list.foldl (<*>) [1] ls) := begin
--- induction l, simp,
--- case list.cons: hd tl ih {
-  
---   rw list.foldl_cons (<*>) l lh lt,
---   rw list.foldl_cons (<*>) [1] lh lt, rw tensor_l_id,
---   rw <-ih,
--- }
--- end
-
 @[simp]
 theorem tensor_sum {l1 l2: list α}: (l1 <*> l2).sum = l1.sum * l2.sum := begin
 induction l1, {
