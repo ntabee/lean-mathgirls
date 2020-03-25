@@ -1,5 +1,5 @@
-import data.list.basic data.list.perm
-import tactic.omega tactic.basic
+import data.list.basic data.list.perm init.data.int.order
+import tactic.omega tactic.basic tactic.tidy
 
 notation `ℙ` := nat.primes
 
@@ -29,3 +29,22 @@ def seg (a b: ℕ) := (list.range (b-a)).map(λ x, x+a)
 def find {α: Type} (p: α -> Prop) [decidable_pred p] [inhabited α] : list α -> α
 | [] := arbitrary α
 | (h::t) := cond (p h) h (find t)
+
+@[simp]
+def nonneg_to_nat (i: ℤ) (h: i ≥ 0): ℕ := begin
+cases i, 
+  exact i,
+  exact false.elim h,
+end
+
+theorem nonneg_to_nat_eq {i: ℤ} {h: i ≥ 0}: i = (nonneg_to_nat i h) := begin
+simp, induction i, 
+  reflexivity, 
+  exfalso, tidy,
+end
+
+theorem sum_nonneg {l: list ℤ} (h: ∀ i: ℤ, i ∈ l -> i ≥ 0): l.sum ≥ 0 := begin
+induction l, 
+  simp,
+  simp, apply add_nonneg, tidy,
+end

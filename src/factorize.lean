@@ -15,6 +15,32 @@ def factorize (n: ℕ) : list (ℕ × ℕ) :=
 #eval factorize (2*2*3*5*5)
 example: (factorize (2*2*3)) ~ [(2, 2), (3, 1)] := by norm_num; reflexivity
 
+theorem factors_ge_2 {n p m: ℕ}: (p, m) ∈ (factorize n) -> p ≥ 2 := begin
+intro h,
+simp at h,
+cases h with a w,
+  rw w.right.left.symm,
+  have: nat.prime a, by apply nat.mem_factors w.left,
+  apply nat.prime.two_le,
+  assumption,
+end
+
+theorem factors_are_nat_factors {n p m: ℕ}: (p, m) ∈ (factorize n) -> p ∈ (nat.factors n) := begin
+intro h,
+simp at h,
+cases h with a w,
+  rw w.right.left.symm,
+  apply w.left,
+end
+
+theorem factors_are_prime {n p m: ℕ}: (p, m) ∈ (factorize n) -> nat.prime p := begin
+intro h,
+simp at h,
+cases h with a w,
+  rw w.right.left.symm,
+  apply nat.mem_factors w.left,
+end
+
 @[simp, reducible]
 def Prod: list ℕ -> ℕ := list.prod
 theorem prod_singleton_id {x}: Prod [x] = x := by simp

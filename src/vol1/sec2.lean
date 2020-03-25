@@ -1,7 +1,7 @@
 -- Chapter 2. Love Letters Called Formulas
 
-import tactic.norm_num tactic.tauto tactic
-import init.data.list.lemmas
+import init.data.list.lemmas init.data.nat.lemmas init.data.list.basic init.data.int.order
+import tactic.norm_num tactic.tauto tactic tactic.basic
 import ..common ..list ..factorize
 
 open tactic
@@ -106,9 +106,11 @@ end
 lemma sumdiv_6: sumdiv 6 = 12 := begin
 unfold sumdiv, unfold divisors,
 rw factorize_6,
+rw divisors_aux,
+simp,
+repeat {rw list.map},
+simp only [list.range, list.range_core],
 norm_num,
-have: list.range 2 = [0, 1], by reflexivity, rw this, clear this,
-reflexivity,
 end
 
 lemma sum_sum_pow_6: sum_sum_pow 6 = 7 := begin
@@ -147,4 +149,195 @@ end sec_2_7
 section sec_2_8
 -- Section 2.8: elaborates Thm 2.7
 
+-- Theorem (geometric series):
+--  1 + x + x^2 + ... x^n = (1-x^(n+1))/(1-x), (x ≠ 1)
+theorem geom_sum (x: ℤ) (n: ℕ) (h: x ≠ 1): <| (x, n) |>.sum = (1 - x^(n+1))/(1-x) := begin
+have h': 1-x ≠ 0, by_contradiction hc, {
+  simp at hc,
+  have: x=1, by rw add_neg_eq_zero.mp hc,
+  contradiction,
+},
+have: (1 - x^(n+1)) = (1-x)*(<| (x, n) |>.sum), {
+  induction n,
+  case nat.zero {
+    simp,
+  },
+  case nat.succ: n ih {
+    rw geom_succ (x, n),
+    rw list.sum_cons,
+    have: (x, n).fst = x, by reflexivity, rw this, clear this,
+    rw mul_add,
+    rw scalar_l_sum,
+    rw [<-mul_assoc (1-x), mul_comm (1-x) x],
+    rw mul_assoc x (1-x) (list.sum _),
+    rw <-ih,
+    repeat {rw pow_succ},
+    simp,
+    rw [mul_add, <-add_assoc, mul_one, add_comm (-x) x, add_neg_self],
+    rw mul_neg_eq_neg_mul_symm,
+    rw zero_add,
+  },
+},
+symmetry,
+rw [this, mul_comm],
+rw int.mul_div_cancel (<|(x, n)|>.sum) h',
+end
+
+-- Shorthand for (1 - x^(n+1))/(1-x)
+@[simp]
+def gs (p: ℤ × ℕ) := (1 - p.1^(p.2+1))/(1-p.1)
+
+-- I will type-cast ℕ <- from&to -> ℤ
+lemma gs_nonneg {p: ℤ × ℕ} (h: p.1 ≥ 0): (gs p) ≥ 0 := begin
+unfold gs,
+have: p.1 = 1 ∨ p.1 ≠ 1, by apply decidable.em,
+cases this,
+  rw this, simp,
+  rw <-geom_sum p.1 p.2 this, simp, clear this,
+  have hran: ∀ m ∈ list.range (1 + p.snd), pow p.1 m ≥ 0,{
+    intros, apply pow_nonneg, assumption,
+  },
+  have: ∀ z:ℤ, z ∈ (list.map (pow p.fst) (list.range (1 + p.snd))) -> z ≥ 0, by tidy,
+  apply sum_nonneg, assumption,
+end
+
+@[simp]
+def nonneg_gs_to_nat (p: ℤ × ℕ) (h: p.1 ≥ 0): ℕ := nonneg_to_nat (gs p) (gs_nonneg h)
+
+theorem nat_is_nonneg {n: ℕ}: (n: ℤ) ≥ 0 := by tidy
+@[simp]
+def gs_nat (p: ℕ × ℕ): ℕ := nonneg_gs_to_nat (↑(p.1), p.2) (@nat_is_nonneg p.1)
+
+-- @[simp]
+-- lemma gs_nat_zero {e: ℕ}: gs_nat (e, 0) = 1 := begin
+-- simp,induction e with e ih, 
+--   reflexivity,
+  
+-- end
+set_option trace.check true
+lemma gs_eq_gs_nat {p: ℕ × ℕ}: gs ↑p = gs_nat p := begin
+rw gs, 
+rw gs_nat, rw nonneg_gs_to_nat,
+
+-- induction (gs_nat p) with gsp ih, {
+--   norm_num,
+--   by_cases ((↑p: ℤ × ℕ).1=1), {
+--     rw h, simp,
+--   }, {
+--     rw add_comm 1 (↑p : ℤ × ℕ).2, rw pow_succ,
+--   }
+-- }
+-- have h: (↑p: (ℤ × ℕ)).1 ≥ 0, by tidy,
+-- have: gs ↑p ≥ 0, from gs_nonneg h,
+-- rw gs_nat, 
+-- rw nonneg_gs_to_nat, 
+-- -- rw nonneg_to_nat,
+-- have pair: ((p.fst: ℤ), p.snd) = (↑p: ℤ × ℕ), by tidy,
+-- have gspair: gs (↑(p.fst), p.snd) =gs ↑p, by tidy,
+-- rw gspair,
+-- apply nonneg_to_nat_eq this,
+end
+
+lemma int_one {x: ℤ}: 1=x ↔ 1-x = 0 := begin
+apply iff.intro,
+  omega,
+  omega,
+end
+lemma int_ne_one {x: ℤ}: 1 ≠ x ↔ 1-x ≠ 0 := begin
+apply iff.intro, 
+  omega,
+  omega,
+end
+
+lemma geom_sum_cast (x: ℕ) (n: ℕ): (<| (x, n) |>.sum: ℤ) = <| ((x: ℤ), n) |>.sum := begin
+induction n with n ih, {
+  simp,
+}, {
+  rw geom_succ (x, n), rw geom_succ (↑x, n),
+  rw list.sum_cons, rw list.sum_cons,
+  rw scalar_l_sum, rw scalar_l_sum,
+  rw <-ih,
+  norm_cast,
+}
+end
+
+theorem geom_sum_nat (x: ℕ) (n: ℕ) (h: x ≠ 1): (<| (x, n) |>.sum: ℤ) = (1 - (x:ℤ)^(n+1))/(1-x) := begin
+have h': (1:ℤ) + (-(x: ℤ)) ≠ 0, {
+  apply int_ne_one.mp,
+  symmetry, assumption_mod_cast,
+},
+have h_int: (x: ℤ) ≠ 1, by tidy,
+rw <-geom_sum (x: ℤ) n h_int,
+rw geom_sum_cast x n,
+end
+
+-- Lift the theorem to lists (of prime powers)
+lemma geom_sums {l: list (ℤ × ℕ)} (h: ∀ p: ℤ × ℕ, p ∈ l -> p.1 ≠ 1): 
+  list.map (λ (x: ℤ × ℕ), <| x |>.sum) l = list.map gs l := begin
+induction l, reflexivity,
+case list.cons: hd tl ih {
+  have hps: hd.fst ≠ 1 ∧ ∀ (x : ℤ × ℕ), x ∈ tl → x.fst ≠ 1, from list.forall_mem_cons.mp h,
+  repeat {rw list.map_cons},
+  have hhd': hd.1 ≠ 1, from hps.1,
+  have hhd: (hd.1 : ℤ) ≠ 1, by assumption_mod_cast, clear hhd',
+  rw geom_sum (hd.1: ℤ) hd.2 hhd,
+  rw ih hps.2,
+  reflexivity,
+}
+end
+
+lemma geom_sums_nat {l: list (ℕ × ℕ)} (h: ∀ p: ℕ × ℕ, p ∈ l -> p.1 ≠ 1): 
+  (list.map (λ (x: ℕ × ℕ), <| x |>.sum) l) = list.map (λ p:ℕ × ℕ, gs_nat p) l := begin
+induction l, reflexivity,
+case list.cons: hd tl ih {
+  have hps: hd.fst ≠ 1 ∧ ∀ (x : ℕ × ℕ), x ∈ tl → x.fst ≠ 1, from list.forall_mem_cons.mp h,
+  repeat {rw list.map_cons},
+  have hhd': hd.1 ≠ 1, from hps.1,
+  have hhd: (↑hd: ℤ × ℕ).1 ≠ 1, {
+    have: ↑(hd.1) = (↑hd: ℤ × ℕ).1, by tidy,
+    intro hc, rw <-this at hc, clear this,
+    have: ↑(hd.1) = (1: ℤ) -> hd.1 = 1, by tidy,
+    exact hhd' (this hc),
+  }, clear hhd',
+  rw ih hps.2,
+  norm_cast,
+  apply and.intro, {
+    have: (<|hd|>.sum : ℤ) = (gs_nat hd: ℤ), {
+      rw <-gs_eq_gs_nat,
+      rw gs,
+      rw <-geom_sum _ _ hhd,
+      rw geom_sum_cast,
+      have: (↑(hd.fst), hd.snd) = ((↑hd: ℤ × ℕ).fst, (↑hd: ℤ × ℕ).snd), by tidy,
+      rw this,
+    }
+  }, assumption,
+}
+end
+#check geom_sum
+-- Theorem 2.8:
+--  divsum n = Π (1-p^(m+1)/(1-p)), (p, m) ∈ factorize n
+theorem sumdiv_eqn': ∀ n, sumdiv n = (list.map (λ p:ℕ × ℕ, gs_nat p) (factorize n)).prod := begin
+intro,
+unfold sumdiv, unfold divisors,
+have all_ne_1: ∀ p: ℕ × ℕ, p ∈ (factorize n) -> p.1 ≠ 1, by {
+  intros p h,
+  cases p,
+  have: nat.prime p_fst, from factors_are_prime h,
+  simp,
+  apply nat.prime.ne_one, assumption,
+},
+rw <- geom_sums_nat all_ne_1,
+
+induction (factorize n), reflexivity,
+{
+  rw divisors_aux,
+  rw tensor_sum,
+  rw ih,
+  rw list.map_cons,
+  rw list.prod_cons,
+}
+end
 end sec_2_8
+
+
+#check  (let F: list (ℕ × ℕ) := factorize 5 in ↑(list.sum (divisors_aux F)) = list.prod (list.map (λ (x : ℕ × ℕ), <| (↑(x.fst), x.snd) |>.sum) F)) 
