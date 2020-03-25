@@ -204,38 +204,15 @@ end
 @[simp]
 def nonneg_gs_to_nat (p: ℤ × ℕ) (h: p.1 ≥ 0): ℕ := nonneg_to_nat (gs p) (gs_nonneg h)
 
-theorem nat_is_nonneg {n: ℕ}: (n: ℤ) ≥ 0 := by tidy
 @[simp]
-def gs_nat (p: ℕ × ℕ): ℕ := nonneg_gs_to_nat (↑(p.1), p.2) (@nat_is_nonneg p.1)
+def gs_nat (p: ℕ × ℕ): ℕ := nonneg_gs_to_nat (↑p: ℤ × ℕ) (by tidy)
 
--- @[simp]
--- lemma gs_nat_zero {e: ℕ}: gs_nat (e, 0) = 1 := begin
--- simp,induction e with e ih, 
---   reflexivity,
-  
--- end
-set_option trace.check true
 lemma gs_eq_gs_nat {p: ℕ × ℕ}: gs ↑p = gs_nat p := begin
-rw gs, 
-rw gs_nat, rw nonneg_gs_to_nat,
-
--- induction (gs_nat p) with gsp ih, {
---   norm_num,
---   by_cases ((↑p: ℤ × ℕ).1=1), {
---     rw h, simp,
---   }, {
---     rw add_comm 1 (↑p : ℤ × ℕ).2, rw pow_succ,
---   }
--- }
--- have h: (↑p: (ℤ × ℕ)).1 ≥ 0, by tidy,
--- have: gs ↑p ≥ 0, from gs_nonneg h,
--- rw gs_nat, 
--- rw nonneg_gs_to_nat, 
--- -- rw nonneg_to_nat,
--- have pair: ((p.fst: ℤ), p.snd) = (↑p: ℤ × ℕ), by tidy,
--- have gspair: gs (↑(p.fst), p.snd) =gs ↑p, by tidy,
--- rw gspair,
--- apply nonneg_to_nat_eq this,
+have h: (↑p: (ℤ × ℕ)).1 ≥ 0, by tidy,
+have: gs ↑p ≥ 0, from gs_nonneg h,
+rw gs_nat, 
+rw nonneg_gs_to_nat,
+apply nonneg_to_nat_eq,
 end
 
 lemma int_one {x: ℤ}: 1=x ↔ 1-x = 0 := begin
@@ -271,7 +248,7 @@ rw <-geom_sum (x: ℤ) n h_int,
 rw geom_sum_cast x n,
 end
 
--- Lift the theorem to lists (of prime powers)
+-- Lift the theorems to lists (of prime powers)
 lemma geom_sums {l: list (ℤ × ℕ)} (h: ∀ p: ℤ × ℕ, p ∈ l -> p.1 ≠ 1): 
   list.map (λ (x: ℤ × ℕ), <| x |>.sum) l = list.map gs l := begin
 induction l, reflexivity,
@@ -309,11 +286,14 @@ case list.cons: hd tl ih {
       rw geom_sum_cast,
       have: (↑(hd.fst), hd.snd) = ((↑hd: ℤ × ℕ).fst, (↑hd: ℤ × ℕ).snd), by tidy,
       rw this,
-    }
-  }, assumption,
+    },
+    assumption_mod_cast,
+  }, {
+    reflexivity,
+  }
 }
 end
-#check geom_sum
+
 -- Theorem 2.8:
 --  divsum n = Π (1-p^(m+1)/(1-p)), (p, m) ∈ factorize n
 theorem sumdiv_eqn': ∀ n, sumdiv n = (list.map (λ p:ℕ × ℕ, gs_nat p) (factorize n)).prod := begin
