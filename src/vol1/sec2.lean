@@ -319,5 +319,3 @@ induction (factorize n), reflexivity,
 end
 end sec_2_8
 
-
-#check  (let F: list (ℕ × ℕ) := factorize 5 in ↑(list.sum (divisors_aux F)) = list.prod (list.map (λ (x : ℕ × ℕ), <| (↑(x.fst), x.snd) |>.sum) F)) 
